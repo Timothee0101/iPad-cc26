@@ -1,1 +1,0 @@
-Tweak that adds ios 26 control center with menus, anims and more you can use this tweak with liquid glass tweak made by winaviation! used ccock18 tweak as a base, credits for Pawxed (max) for base code. Thanks to Lionel for helping me and making this tweak possible 

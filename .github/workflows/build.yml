@@ -1,0 +1,57 @@
+name: Build ControlCenter26
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: macos-13
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Theos
+        uses: actions/cache@v4
+        with:
+          path: ~/theos
+          key: theos-macos13-v1
+
+      - name: Install Theos + tools
+        run: |
+          if [ ! -d "$HOME/theos" ]; then
+            git clone --recursive --depth=1 https://github.com/theos/theos.git $HOME/theos
+          fi
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          brew install ldid xz || true
+
+      - name: Install iOS SDK
+        run: |
+          mkdir -p $THEOS/sdks
+          if [ ! -d "$THEOS/sdks/iPhoneOS16.5.sdk" ]; then
+            echo "Downloading iPhoneOS16.5.sdk..."
+            curl -L --retry 3 -o /tmp/sdk.tar.xz \
+              "https://github.com/theos/sdks/releases/download/master/iPhoneOS16.5.sdk.tar.xz"
+            tar -xJf /tmp/sdk.tar.xz -C $THEOS/sdks
+          fi
+          ls -la $THEOS/sdks
+
+      - name: Build
+        run: |
+          export THEOS=$HOME/theos
+          export PATH=$THEOS/bin:$PATH
+          sed -i '' 's|TARGET = .*|TARGET = iphone:clang:16.5:15.0|' makefile || true
+          make clean || true
+          make package FINALPACKAGE=1
+          echo "Built packages:"
+          find . -name "*.deb" -print
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: ControlCenter26-iPad
+          path: |
+            packages/*.deb
+          if-no-files-found: error
+          retention-days: 14
